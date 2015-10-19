@@ -1,10 +1,10 @@
 /*global google, $, window, d3 */
 /*jslint browser:true, devel:true, this:true */
-/*global google, d3, radarChart, $ */
 
-var blank_scores = [];
 $(document).ready(function () {
     'use strict';
+    var scoreArray = [];
+
     var center = new google.maps.LatLng(40.7845, 140.778),
         options = {
             zoom: 15,
@@ -30,7 +30,7 @@ $(document).ready(function () {
             });
             infoWindow.open(marker.getMap(), marker);
             google.maps.event.addListener(infoWindow, 'domready', function () {
-                radarChart(blank_scores);
+                radarChart();
             });
         });
     }
@@ -38,13 +38,13 @@ $(document).ready(function () {
     $.getJSON("data.json", function (spots) {
         var i;
         for (i = 0; i < spots.length; i += 1) {
-            blank_scores = spot[i].score;
+            scoreArray[i] = spot[i].score;
             markers[i] = createMarker(spots[i], map);
             attachInfoWindow(markers[i], spots[i].name);
         }
     });
 
-    var radarChart(scores) = function (scores) {
+    var radarChart() = function () {
     var w = 200;
     var h = 200;
     var padding = 20;
@@ -52,9 +52,8 @@ $(document).ready(function () {
         .append('svg')
         .attr('width', w)
         .attr('height', h);
-    var dataset = scores;
-    var paramCount = dataset[0].length;
-    var max = d3.max(d3.merge(dataset));
+    var paramCount = scoreArray[0].length;
+    var max = d3.max(d3.merge(scoreArray));
     var rScale = d3.scale.linear()
         .domain([0, max])
         .range([0, w / 2 - padding]);
@@ -90,7 +89,7 @@ $(document).ready(function () {
         .interpolate('linear');
 
     svg.selectAll('path')
-        .data(dataset)
+        .data(scoreArray)
         .enter()
         .append('path')
         .attr('d', function (d) {
