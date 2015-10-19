@@ -1,50 +1,25 @@
 /*global google, $, window, d3 */
 /*jslint browser:true, devel:true, this:true */
+/*global google, d3, radarChart, $ */
 
-$(document).ready(function () {
+var blank_scores = [];
+
+var center,
+    options,
+    map,
+    markers;
+
+function createMarker(spot, map) {
     'use strict';
-    var scoreArray = [];
-
-    var center = new google.maps.LatLng(40.7845, 140.778),
-        options = {
-            zoom: 15,
-            center: center,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-        },
-        map = new google.maps.Map($('#map').get(0), options),
-        markers = [];
-
-    function createMarker(spot, map) {
-        var marker = new google.maps.Marker({
-            position: new google.maps.LatLng(spot.lat, spot.lng),
-            map: map
-        });
-        return marker;
-    }
-
-    function attachInfoWindow(marker) {
-        var infoWindow;
-        google.maps.event.addListener(marker, 'click', function () {
-            infoWindow = new google.maps.InfoWindow({
-                content:　'<div id="infodiv"></div>'
-            });
-            infoWindow.open(marker.getMap(), marker);
-            google.maps.event.addListener(infoWindow, 'domready', function () {
-                radarChart();
-            });
-        });
-    }
-
-    $.getJSON("data.json", function (spots) {
-        var i;
-        for (i = 0; i < spots.length; i += 1) {
-            scoreArray[i] = spot[i].score;
-            markers[i] = createMarker(spots[i], map);
-            attachInfoWindow(markers[i], spots[i].name);
-        }
+    var marker = new google.maps.Marker({
+        position: new google.maps.LatLng(spot.lat, spot.lng),
+        map: map
     });
+    return marker;
+}
 
-    var radarChart() = function () {
+var radarChart = function (scores) {
+    'use strict';
     var w = 200;
     var h = 200;
     var padding = 20;
@@ -52,8 +27,9 @@ $(document).ready(function () {
         .append('svg')
         .attr('width', w)
         .attr('height', h);
-    var paramCount = scoreArray[0].length;
-    var max = d3.max(d3.merge(scoreArray));
+    var dataset = scores;
+    var paramCount = dataset.length;
+    var max = d3.max(dataset);
     var rScale = d3.scale.linear()
         .domain([0, max])
         .range([0, w / 2 - padding]);
@@ -89,7 +65,7 @@ $(document).ready(function () {
         .interpolate('linear');
 
     svg.selectAll('path')
-        .data(scoreArray)
+        .data(dataset)
         .enter()
         .append('path')
         .attr('d', function (d) {
@@ -128,5 +104,37 @@ $(document).ready(function () {
         .attr("font-size", "15px");
 };
 
-});
+function attachInfoWindow(marker, name, blank_scores) {
+    'use strict';
+    var infoWindow;
+    google.maps.event.addListener(marker, 'click', function () {
+        infoWindow = new google.maps.InfoWindow({
+            content:　name + '<div id="infodiv"></div>'
+        });
+        infoWindow.open(marker.getMap(), marker);
+        google.maps.event.addListener(infoWindow, 'domready', function () {
+            radarChart(blank_scores);
+        });
+    });
+}
 
+$(document).ready(function () {
+    'use strict';
+    center = new google.maps.LatLng(40.7845, 140.778);
+    options = {
+        zoom: 15,
+        center: center,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    map = new google.maps.Map($('#map').get(0), options);
+    markers = [];
+
+    $.getJSON("data.json", function (spots) {
+        var i;
+        for (i = 0; i < spots.length; i += 1) {
+            blank_scores = spots[i].scores;
+            markers[i] = createMarker(spots[i], map);
+            attachInfoWindow(markers[i], spots[i].name, blank_scores);
+        }
+    });
+});
